@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Play, Pause, SkipForward, CheckCircle, Timer, RotateCcw } from 'lucide-react';
 import { WORKOUT_PLAN, WORKOUT_SETTINGS } from '../constants';
 import { clsx, type ClassValue } from 'clsx';
