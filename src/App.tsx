@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, ClipboardList, Utensils, Home, Bell, Circle } from 'lucide-react';
+import { Calendar as CalendarIcon, ClipboardList, Utensils, Home, Bell, Circle, Play } from 'lucide-react';
 import { SHIFT_PROTOCOLS, WORKOUT_PLAN, NUTRITION_PLAN, type ShiftType, type ScheduleProtocol } from './constants';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, getDay, addDays, subDays } from 'date-fns';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import WorkoutPlayer from './components/WorkoutPlayer';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -14,6 +15,11 @@ type Tab = 'today' | 'calendar' | 'workout' | 'nutrition';
 interface DayShift {
   date: string;
   type: ShiftType;
+}
+
+interface CompletedWorkout {
+  date: string;
+  timestamp: number;
 }
 
 const getDailyProtocol = (date: Date, shifts: DayShift[]): ScheduleProtocol | null => {
@@ -81,12 +87,21 @@ export default function App() {
     const saved = localStorage.getItem('shifts');
     return saved ? JSON.parse(saved) : [];
   });
+  const [workoutHistory, setWorkoutHistory] = useState<CompletedWorkout[]>(() => {
+    const saved = localStorage.getItem('workoutHistory');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [notificationsEnabled, setNotificationsEnabled] = useState(Notification.permission === 'granted');
+  const [isWorkoutActive, setIsWorkoutActive] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('shifts', JSON.stringify(shifts));
   }, [shifts]);
+
+  useEffect(() => {
+    localStorage.setItem('workoutHistory', JSON.stringify(workoutHistory));
+  }, [workoutHistory]);
 
   const requestNotificationPermission = async () => {
     const permission = await Notification.requestPermission();
@@ -97,6 +112,11 @@ export default function App() {
         icon: "/pwa-192x192.png"
       });
     }
+  };
+
+  const handleWorkoutComplete = () => {
+    setWorkoutHistory(prev => [...prev, { date: new Date().toISOString(), timestamp: Date.now() }]);
+    setIsWorkoutActive(false);
   };
 
   const currentShift = shifts.find(s => isSameDay(new Date(s.date), selectedDate))?.type;
@@ -115,6 +135,14 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20 text-gray-900 font-sans">
+      {/* Workout Player Overlay */}
+      {isWorkoutActive && (
+        <WorkoutPlayer 
+          onClose={() => setIsWorkoutActive(false)} 
+          onComplete={handleWorkoutComplete}
+        />
+      )}
+
       {/* Header */}
       <header className="bg-white border-b sticky top-0 z-10 p-4">
         <div className="flex justify-between items-center max-w-lg mx-auto">
@@ -227,6 +255,7 @@ export default function App() {
                   const dayShift = shifts.find(s => isSameDay(new Date(s.date), day));
                   const isSelected = isSameDay(day, selectedDate);
                   const isToday = isSameDay(day, new Date());
+                  const hasWorkout = workoutHistory.some(w => isSameDay(new Date(w.date), day));
                   
                   // Color coding for calendar
                   let shiftColor = "bg-indigo-400";
@@ -244,12 +273,20 @@ export default function App() {
                       )}
                     >
                       <span>{format(day, 'd')}</span>
-                      {dayShift && (
-                        <div className={cn(
-                          "w-1.5 h-1.5 rounded-full mt-1",
-                          isSelected ? "bg-white" : shiftColor
-                        )} />
-                      )}
+                      <div className="flex gap-0.5 mt-1">
+                        {dayShift && (
+                          <div className={cn(
+                            "w-1.5 h-1.5 rounded-full",
+                            isSelected ? "bg-white" : shiftColor
+                          )} />
+                        )}
+                        {hasWorkout && (
+                          <div className={cn(
+                            "w-1.5 h-1.5 rounded-full",
+                            isSelected ? "bg-white" : "bg-orange-400"
+                          )} />
+                        )}
+                      </div>
                     </button>
                   );
                 })}
@@ -288,12 +325,28 @@ export default function App() {
         {activeTab === 'workout' && (
           <div className="space-y-4 animate-in fade-in">
              <div className="bg-indigo-600 rounded-2xl p-6 text-white shadow-lg">
-                <h2 className="text-2xl font-bold">Push/Pull/Legs</h2>
-                <p className="text-indigo-100 text-sm mt-1">3 Days Per Week • Full Body Hybrid</p>
-                <div className="mt-4 flex gap-4 text-xs font-medium">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h2 className="text-2xl font-bold">Push/Pull/Legs</h2>
+                    <p className="text-indigo-100 text-sm mt-1">3 Days Per Week • Full Body Hybrid</p>
+                  </div>
+                  <div className="text-center bg-indigo-500/30 p-2 rounded-lg backdrop-blur-sm">
+                    <div className="text-xs text-indigo-200 uppercase tracking-wider">Done</div>
+                    <div className="text-xl font-bold">{workoutHistory.length}</div>
+                  </div>
+                </div>
+                
+                <div className="mt-6 flex gap-4 text-xs font-medium">
                   <span className="bg-indigo-500 px-2 py-1 rounded">Rest: 60-90s</span>
                   <span className="bg-indigo-500 px-2 py-1 rounded">Tempo: 3s down / 1s up</span>
                 </div>
+
+                <button 
+                  onClick={() => setIsWorkoutActive(true)}
+                  className="mt-6 w-full bg-white text-indigo-600 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-50 transition-colors"
+                >
+                  <Play size={20} fill="currentColor" /> Start Workout
+                </button>
              </div>
 
              <div className="space-y-2">

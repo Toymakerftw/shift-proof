@@ -56,14 +56,70 @@ export const SHIFT_PROTOCOLS: Record<ShiftType, ScheduleProtocol> = {
 };
 
 export const WORKOUT_PLAN = [
-  { exercise: 'Goblet Squats', sets: 3, reps: '12–15', target: 'Legs/Glutes' },
-  { exercise: 'Pull-Ups', sets: 3, reps: 'Failure', target: 'Back/Lats' },
-  { exercise: 'Dumbbell Floor Press', sets: 3, reps: '10–12', target: 'Chest/Triceps' },
-  { exercise: 'Standing Overhead Press', sets: 3, reps: '10–12', target: 'Shoulders' },
-  { exercise: 'Single Arm DB Rows', sets: 3, reps: '12 ea.', target: 'Back' },
-  { exercise: 'Dumbbell Bicep Curls', sets: 3, reps: '12–15', target: 'Arms' },
-  { exercise: 'Plank', sets: 3, reps: '60 sec', target: 'Core' }
+  { 
+    exercise: 'Goblet Squats', 
+    sets: 3, 
+    reps: '12–15', 
+    target: 'Legs/Glutes',
+    description: 'Hold a weight close to your chest and squat down.',
+    instructions: ['Keep chest up', 'Knees out', 'Depth below parallel']
+  },
+  { 
+    exercise: 'Pull-Ups', 
+    sets: 3, 
+    reps: 'Failure', 
+    target: 'Back/Lats',
+    description: 'Pull your body up until chin clears the bar.',
+    instructions: ['Full extension at bottom', 'Drive elbows down', 'Core tight']
+  },
+  { 
+    exercise: 'Dumbbell Floor Press', 
+    sets: 3, 
+    reps: '10–12', 
+    target: 'Chest/Triceps',
+    description: 'Press weights up from a lying position on the floor.',
+    instructions: ['Elbows at 45 degrees', 'Press straight up', 'Control the descent']
+  },
+  { 
+    exercise: 'Standing Overhead Press', 
+    sets: 3, 
+    reps: '10–12', 
+    target: 'Shoulders',
+    description: 'Press weights vertically overhead.',
+    instructions: ['Core braced', 'Don\'t arch back', 'Full lockout']
+  },
+  { 
+    exercise: 'Single Arm DB Rows', 
+    sets: 3, 
+    reps: '12 ea.', 
+    target: 'Back',
+    description: 'Row weight to hip while supporting torso.',
+    instructions: ['Flat back', 'Drive with elbow', 'Squeeze at top']
+  },
+  { 
+    exercise: 'Dumbbell Bicep Curls', 
+    sets: 3, 
+    reps: '12–15', 
+    target: 'Arms',
+    description: 'Curl weights up focusing on biceps.',
+    instructions: ['Elbows tucked', 'No swinging', 'Squeeze at top']
+  },
+  { 
+    exercise: 'Plank', 
+    sets: 3, 
+    reps: '60 sec', 
+    target: 'Core',
+    description: 'Hold a straight body position on forearms.',
+    instructions: ['Glutes squeezed', 'Core tight', 'Flat back'],
+    isTimed: true,
+    duration: 60
+  }
 ];
+
+export const WORKOUT_SETTINGS = {
+  restBetweenSets: 60,
+  restBetweenExercises: 90
+};
 
 export const NUTRITION_PLAN = {
   dailyTargets: '~1800 Calories | ~140g Protein',
