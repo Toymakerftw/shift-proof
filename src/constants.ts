@@ -52,6 +52,17 @@ export const SHIFT_PROTOCOLS: Record<ShiftType, ScheduleProtocol> = {
       { time: '5:00 PM', label: 'Work Snack', description: 'Protein focused' },
       { time: '11:00 PM', label: 'Dinner', description: 'Light meal after home' }
     ]
+  },
+  'Weekoff': {
+    shiftTime: 'Off Duty',
+    priority: 'Rest & Recreation',
+    sleep: { main: '11:00 PM – 8:00 AM' },
+    workout: 'Flexible Time',
+    meals: [
+      { time: '10:00 AM', label: 'Brunch', description: 'Relaxed meal' },
+      { time: '2:00 PM', label: 'Snack', description: 'Light snack' },
+      { time: '7:00 PM', label: 'Dinner', description: 'Family/Social meal' }
+    ]
   }
 };
 
