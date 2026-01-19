@@ -208,14 +208,35 @@ export default function App() {
               </div>
 
               {!currentShift ? (
-                <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-6 text-center">
-                  <p className="text-indigo-900 mb-4">No shift set for {isSameDay(selectedDate, new Date()) ? 'today' : 'this day'}</p>
-                  <button 
-                    onClick={() => setActiveTab('calendar')}
-                    className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium"
-                  >
-                    Assign Shift
-                  </button>
+                <div className="bg-white rounded-xl border shadow-sm p-6 animate-in fade-in">
+                  <div className="text-center mb-6">
+                    <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <CalendarIcon size={24} />
+                    </div>
+                    <h3 className="font-bold text-gray-900">No shift set for {isSameDay(selectedDate, new Date()) ? 'today' : 'this day'}</h3>
+                    <p className="text-sm text-gray-500">Select a shift type to generate your schedule.</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['Regular', 'Early Morning', 'Afternoon', 'Night', 'Weekoff'] as ShiftType[]).map(type => (
+                      <button
+                        key={type}
+                        onClick={() => handleSetShift(type)}
+                        className={cn(
+                          "p-3 rounded-xl border text-left transition-all hover:border-indigo-300 hover:bg-indigo-50",
+                          type === 'Weekoff' && "col-span-2 hover:border-emerald-300 hover:bg-emerald-50"
+                        )}
+                      >
+                        <div className="text-sm font-bold flex justify-between">
+                          {type}
+                          {type === 'Weekoff' && <span className="text-emerald-600 text-xs">Rest Day</span>}
+                        </div>
+                        <div className="text-[10px] text-gray-500 line-clamp-1">
+                          {type === 'Weekoff' ? 'Dynamic Recovery Plan' : SHIFT_PROTOCOLS[type]?.shiftTime}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-4">
