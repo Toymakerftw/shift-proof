@@ -26,38 +26,6 @@ export default function WorkoutPlayer({ onClose, onComplete }: WorkoutPlayerProp
   const currentExercise = WORKOUT_PLAN[currentExerciseIndex];
   const totalSets = currentExercise.sets;
 
-  useEffect(() => {
-    if (isActive && timeLeft > 0) {
-      timerRef.current = window.setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
-      }, 1000);
-    } else if (timeLeft === 0) {
-      handleTimerComplete();
-    }
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isActive, timeLeft, stage]);
-
-  const handleTimerComplete = () => {
-    if (stage === 'get-ready') {
-      setStage('work');
-      // If timed exercise (Plank), set duration
-      if (currentExercise.isTimed) {
-        setTimeLeft(currentExercise.duration || 60);
-      } else {
-        setIsActive(false); // Stop timer for reps-based, wait for user input
-      }
-    } else if (stage === 'work') {
-      // Work timer finished (for timed exercises)
-      handleSetComplete();
-    } else if (stage === 'rest') {
-      // Rest finished
-      startNextSet();
-    }
-  };
-
   const startNextSet = () => {
     if (currentSet < totalSets) {
       setCurrentSet(prev => prev + 1);
@@ -102,6 +70,39 @@ export default function WorkoutPlayer({ onClose, onComplete }: WorkoutPlayerProp
     setTimeLeft(restTime);
     setIsActive(true);
   };
+
+  const handleTimerComplete = () => {
+    if (stage === 'get-ready') {
+      setStage('work');
+      // If timed exercise (Plank), set duration
+      if (currentExercise.isTimed) {
+        setTimeLeft(currentExercise.duration || 60);
+      } else {
+        setIsActive(false); // Stop timer for reps-based, wait for user input
+      }
+    } else if (stage === 'work') {
+      // Work timer finished (for timed exercises)
+      handleSetComplete();
+    } else if (stage === 'rest') {
+      // Rest finished
+      startNextSet();
+    }
+  };
+
+  useEffect(() => {
+    if (isActive && timeLeft > 0) {
+      timerRef.current = window.setInterval(() => {
+        setTimeLeft((prev) => prev - 1);
+      }, 1000);
+    } else if (timeLeft === 0) {
+      handleTimerComplete();
+    }
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive, timeLeft, stage]);
 
   const skipRest = () => {
     handleTimerComplete();
