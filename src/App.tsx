@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, ClipboardList, Utensils, Home, Bell, Circle, Play, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, ClipboardList, Utensils, Home, Bell, Circle, Play, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import { SHIFT_PROTOCOLS, WORKOUT_PLAN, NUTRITION_PLAN, type ShiftType, type ScheduleProtocol } from './constants';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, getDay, addDays, subDays, isTomorrow, isYesterday } from 'date-fns';
 import { clsx, type ClassValue } from 'clsx';
@@ -174,18 +174,30 @@ export default function App() {
                   <ChevronLeft size={20} />
                 </button>
                 
-                <h2 className="text-lg font-bold text-gray-900">
-                  {isSameDay(selectedDate, new Date()) 
-                    ? "Today" 
-                    : isTomorrow(selectedDate)
-                    ? "Tomorrow"
-                    : isYesterday(selectedDate)
-                    ? "Yesterday"
-                    : format(selectedDate, 'EEE, MMM d')}
-                  <span className="font-normal text-gray-500 text-sm ml-2">
-                    {format(selectedDate, 'MMM d')}
-                  </span>
-                </h2>
+                <div className="flex flex-col items-center">
+                  <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    {isSameDay(selectedDate, new Date()) 
+                      ? "Today" 
+                      : isTomorrow(selectedDate)
+                      ? "Tomorrow"
+                      : isYesterday(selectedDate)
+                      ? "Yesterday"
+                      : format(selectedDate, 'EEE, MMM d')}
+                  </h2>
+                  {!isSameDay(selectedDate, new Date()) && (
+                    <button 
+                      onClick={() => setSelectedDate(new Date())}
+                      className="text-xs font-medium text-indigo-600 flex items-center gap-1 hover:bg-indigo-50 px-2 py-0.5 rounded-full transition-colors"
+                    >
+                      <RotateCcw size={12} /> Return to Today
+                    </button>
+                  )}
+                  {isSameDay(selectedDate, new Date()) && (
+                    <span className="text-xs font-normal text-gray-500">
+                      {format(selectedDate, 'MMM d')}
+                    </span>
+                  )}
+                </div>
 
                 <button 
                   onClick={() => setSelectedDate(prev => addDays(prev, 1))}
@@ -460,7 +472,10 @@ export default function App() {
         <div className="max-w-lg mx-auto flex justify-between items-center">
           <NavButton 
             active={activeTab === 'today'} 
-            onClick={() => setActiveTab('today')}
+            onClick={() => {
+              if (activeTab === 'today') setSelectedDate(new Date());
+              setActiveTab('today');
+            }}
             icon={<Home size={24} />}
             label="Schedule"
           />
