@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, ClipboardList, Utensils, Home, Bell, Circle, Play } from 'lucide-react';
+import { Calendar as CalendarIcon, ClipboardList, Utensils, Home, Bell, Circle, Play, ChevronLeft, ChevronRight } from 'lucide-react';
 import { SHIFT_PROTOCOLS, WORKOUT_PLAN, NUTRITION_PLAN, type ShiftType, type ScheduleProtocol } from './constants';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, getDay, addDays, subDays } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, getDay, addDays, subDays, isTomorrow, isYesterday } from 'date-fns';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import WorkoutPlayer from './components/WorkoutPlayer';
@@ -166,10 +166,38 @@ export default function App() {
         {activeTab === 'today' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
             <section>
-              <h2 className="text-lg font-semibold mb-2">Today, {format(new Date(), 'MMM d')}</h2>
+              <div className="flex items-center justify-between mb-4 bg-white p-2 rounded-xl border shadow-sm">
+                <button 
+                  onClick={() => setSelectedDate(prev => subDays(prev, 1))}
+                  className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition-colors"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                
+                <h2 className="text-lg font-bold text-gray-900">
+                  {isSameDay(selectedDate, new Date()) 
+                    ? "Today" 
+                    : isTomorrow(selectedDate)
+                    ? "Tomorrow"
+                    : isYesterday(selectedDate)
+                    ? "Yesterday"
+                    : format(selectedDate, 'EEE, MMM d')}
+                  <span className="font-normal text-gray-500 text-sm ml-2">
+                    {format(selectedDate, 'MMM d')}
+                  </span>
+                </h2>
+
+                <button 
+                  onClick={() => setSelectedDate(prev => addDays(prev, 1))}
+                  className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition-colors"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+
               {!currentShift ? (
                 <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-6 text-center">
-                  <p className="text-indigo-900 mb-4">No shift set for today</p>
+                  <p className="text-indigo-900 mb-4">No shift set for {isSameDay(selectedDate, new Date()) ? 'today' : 'this day'}</p>
                   <button 
                     onClick={() => setActiveTab('calendar')}
                     className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium"
@@ -434,7 +462,7 @@ export default function App() {
             active={activeTab === 'today'} 
             onClick={() => setActiveTab('today')}
             icon={<Home size={24} />}
-            label="Today"
+            label="Schedule"
           />
           <NavButton 
             active={activeTab === 'calendar'} 
