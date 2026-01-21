@@ -15,7 +15,7 @@ export default defineConfig({
         name: 'Shift-Proof Scheduler',
         short_name: 'ShiftProof',
         description: 'Track and recommend sleep, workout, and meal times based on shifts.',
-        theme_color: '#ffffff',
+        theme_color: '#020617',
         icons: [
           {
             src: 'pwa-192x192.png',

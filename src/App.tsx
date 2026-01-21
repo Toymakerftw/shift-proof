@@ -806,39 +806,42 @@ export default function App() {
         )}
       </main>
 
-      {/* Floating Dock Navigation */}
-      <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-surface/80 backdrop-blur-2xl border border-white/10 p-2 rounded-2xl shadow-2xl z-50 flex items-center gap-1 shadow-black/50">
-         <NavButton active={activeTab === 'today'} onClick={() => setActiveTab('today')} icon={<Home size={20} />} />
-         <NavButton active={activeTab === 'calendar'} onClick={() => setActiveTab('calendar')} icon={<CalendarIcon size={20} />} />
-         
-         <div className="w-px h-8 bg-white/10 mx-1"></div>
-         
-         <NavButton active={activeTab === 'workouts'} onClick={() => setActiveTab('workouts')} icon={<Dumbbell size={24} />} isMain />
-         
-         <div className="w-px h-8 bg-white/10 mx-1"></div>
+      {/* Fixed Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-surface/90 backdrop-blur-xl border-t border-white/5 pb-[env(safe-area-inset-bottom)] z-50">
+         <div className="flex justify-around items-center h-16 max-w-lg mx-auto px-2">
+            <NavButton active={activeTab === 'today'} onClick={() => setActiveTab('today')} icon={<Home size={20} />} label="Today" />
+            <NavButton active={activeTab === 'calendar'} onClick={() => setActiveTab('calendar')} icon={<CalendarIcon size={20} />} label="Plan" />
+            
+            <NavButton active={activeTab === 'workouts'} onClick={() => setActiveTab('workouts')} icon={<Dumbbell size={22} />} label="Train" isMain />
 
-         <NavButton active={activeTab === 'nutrition'} onClick={() => setActiveTab('nutrition')} icon={<Utensils size={20} />} />
-         <NavButton active={activeTab === 'stats'} onClick={() => setActiveTab('stats')} icon={<BarChart3 size={20} />} />
+            <NavButton active={activeTab === 'nutrition'} onClick={() => setActiveTab('nutrition')} icon={<Utensils size={20} />} label="Fuel" />
+            <NavButton active={activeTab === 'stats'} onClick={() => setActiveTab('stats')} icon={<BarChart3 size={20} />} label="Stats" />
+         </div>
       </nav>
     </div>
   );
 }
 
-function NavButton({ active, onClick, icon, isMain }: { active: boolean; onClick: () => void; icon: React.ReactNode, isMain?: boolean }) {
+function NavButton({ active, onClick, icon, isMain, label }: { active: boolean; onClick: () => void; icon: React.ReactNode, isMain?: boolean, label: string }) {
   return (
     <button
       onClick={onClick}
       className={cn(
-        "relative flex items-center justify-center transition-all duration-300 rounded-xl",
-        isMain ? "w-14 h-14" : "w-12 h-12",
-        active 
-          ? "bg-primary text-white shadow-lg shadow-primary/25 scale-110" 
-          : "text-slate-400 hover:text-white hover:bg-white/5",
-        !active && isMain && "bg-surface-hover border border-white/5 text-slate-300"
+        "flex-1 flex flex-col items-center justify-center gap-1 h-full w-full transition-all active:scale-95",
+        active ? "text-primary" : "text-slate-500 hover:text-slate-300"
       )}
     >
-      {icon}
-      {active && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-white rounded-full opacity-50"></span>}
+      <div className={cn(
+         "relative flex items-center justify-center rounded-2xl transition-all",
+         isMain && active && "bg-primary text-white shadow-lg shadow-primary/20 p-2.5 -mt-6 mb-1 border-4 border-background",
+         isMain && !active && "bg-surface-hover text-slate-400 p-2.5 -mt-6 mb-1 border-4 border-background",
+         !isMain && "p-1"
+      )}>
+         {icon}
+      </div>
+      <span className={cn("text-[10px] font-bold tracking-wide transition-opacity", isMain && "mt-0")}>
+         {label}
+      </span>
     </button>
   );
 }
