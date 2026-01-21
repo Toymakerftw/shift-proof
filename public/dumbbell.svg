@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="120" fill="#0f172a"/>
+
+  <!-- Dumbbell -->
+  <g
+    transform="translate(256 256) rotate(45)"
+    fill="none"
+    stroke="#6366f1"
+    stroke-width="28"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <!-- Center bar -->
+    <line x1="-120" y1="0" x2="120" y2="0" />
+
+    <!-- Left plates (big inside, small outside) -->
+    <line x1="-170" y1="-70" x2="-170" y2="70" />
+    <line x1="-210" y1="-45" x2="-210" y2="45" />
+
+    <!-- Right plates (big inside, small outside) -->
+    <line x1="170" y1="-70" x2="170" y2="70" />
+    <line x1="210" y1="-45" x2="210" y2="45" />
+  </g>
+</svg>
