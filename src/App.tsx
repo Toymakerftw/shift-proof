@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, Home, Bell, ChevronLeft, ChevronRight, RotateCcw, Dumbbell, Utensils, BarChart3, CheckCircle, Circle, Play, Pause, Minus, ExternalLink, Info, Trophy, Flame } from 'lucide-react';
-import { SHIFT_PROTOCOLS, type ShiftType, type ScheduleProtocol, WORKOUT_PLAN, WORKOUT_SETTINGS, NUTRITION_PLAN } from './constants';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, getDay, addDays, subDays, isTomorrow, isYesterday } from 'date-fns';
+import { Calendar as CalendarIcon, Home, Bell, ChevronLeft, ChevronRight, RotateCcw, Dumbbell, Utensils, BarChart3, CheckCircle, Circle, Play, Pause, Minus, ExternalLink, Info, Trophy, Flame, Moon, Sun, Briefcase } from 'lucide-react';
+import { SHIFT_PROTOCOLS, type ShiftType, type ScheduleProtocol } from './constants';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, getDay, addDays, subDays } from 'date-fns';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -16,13 +16,13 @@ interface DayShift {
   type: ShiftType;
 }
 
-// Helper to get current day ID
+// --- Helper to get current day ID ---
 const getTodayId = () => {
   const days = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
   return days[new Date().getDay()];
 };
 
-/* ---------------- WORKOUT SCHEDULE DATA ---------------- */
+/* ---------------- WORKOUT DATA ---------------- */
 const workoutSchedule = [
   {
     id: "mon",
@@ -255,7 +255,6 @@ const getDailyProtocol = (date: Date, shifts: DayShift[]): ScheduleProtocol | nu
     ]
   };
 
-  // Scenario 1: Recovering from Night Shift
   if (prevShift === 'Night') {
     return {
       ...baseWeekoff,
@@ -270,7 +269,6 @@ const getDailyProtocol = (date: Date, shifts: DayShift[]): ScheduleProtocol | nu
     };
   }
 
-  // Scenario 2: Preparing for Night Shift
   if (nextShift === 'Night') {
     return {
       ...baseWeekoff,
@@ -287,6 +285,37 @@ const getDailyProtocol = (date: Date, shifts: DayShift[]): ScheduleProtocol | nu
 
   return baseWeekoff;
 };
+
+// --- Reusable UI Components ---
+
+function GlassCard({ children, className, onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) {
+  return (
+    <div 
+      onClick={onClick}
+      className={cn(
+        "rounded-[var(--radius-card)] border border-white/5 bg-surface p-6 transition-all",
+        onClick && "active:scale-98 cursor-pointer hover:bg-slate-800/50",
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+function SectionHeader({ icon: Icon, title, subtitle }: { icon?: any, title: string, subtitle?: string }) {
+  return (
+    <div className="flex items-center gap-3 mb-4">
+      {Icon && <Icon size={20} className="text-primary" />}
+      <div>
+        <h2 className="text-lg font-bold text-white leading-none">{title}</h2>
+        {subtitle && <p className="text-xs font-medium text-slate-500 mt-1 uppercase tracking-wider">{subtitle}</p>}
+      </div>
+    </div>
+  );
+}
+
+// --- Main App ---
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('today');
@@ -349,63 +378,33 @@ export default function App() {
     setShifts(newShifts);
   };
 
-  // Get today's workout based on the day of the week
-  const getTodaysWorkout = () => {
-    const todayId = getTodayId();
-    return workoutSchedule.find(w => w.id === todayId);
-  };
 
-  const toggleExerciseComplete = (key: string, exerciseName: string) => {
+
+  const toggleExerciseComplete = (key: string) => {
     const isCurrentlyDone = !!completedExercises[key];
-
-    // Calculate XP gain/loss
     const xpChange = isCurrentlyDone ? -50 : 50;
     const newXp = Math.max(0, stats.xp + xpChange);
     const newLevel = Math.floor(newXp / 1000) + 1;
 
-    // Update stats if completing an exercise
     if (!isCurrentlyDone) {
-      setStats(prev => ({
-        ...prev,
-        xp: newXp,
-        level: newLevel,
-        streak: prev.streak + 1
-      }));
+      setStats((prev: { xp: number; level: number; streak: number }) => ({ ...prev, xp: newXp, level: newLevel, streak: prev.streak + 1 }));
     } else {
-      setStats(prev => ({
-        ...prev,
-        xp: newXp,
-        level: newLevel,
-        streak: Math.max(0, prev.streak - 1)
-      }));
+      setStats((prev: { xp: number; level: number; streak: number }) => ({ ...prev, xp: newXp, level: newLevel, streak: Math.max(0, prev.streak - 1) }));
     }
 
-    setCompletedExercises(prev => ({
-      ...prev,
-      [key]: !isCurrentlyDone
-    }));
+    setCompletedExercises(prev => ({ ...prev, [key]: !isCurrentlyDone }));
   };
 
   const updateDietTracking = (type: 'calories' | 'protein', amount: number) => {
-    setDietTracking(prev => {
+    setDietTracking((prev: { calories: number; protein: number }) => {
       const current = prev[type] || 0;
-      return {
-        ...prev,
-        [type]: Math.max(0, current + amount)
-      };
+      return { ...prev, [type]: Math.max(0, current + amount) };
     });
   };
 
-  // Additional workout helpers
   const currentWorkout = workoutSchedule.find(w => w.id === activeWorkoutDay);
-
-  const doneCount = currentWorkout?.exercises.filter(
-    (ex) => completedExercises[`${activeWorkoutDay}-${ex.name}`]
-  ).length || 0;
-
-  const progress = currentWorkout
-    ? Math.round((doneCount / currentWorkout.exercises.length) * 100)
-    : 0;
+  const doneCount = currentWorkout?.exercises.filter((ex) => completedExercises[`${activeWorkoutDay}-${ex.name}`]).length || 0;
+  const progress = currentWorkout ? Math.round((doneCount / currentWorkout.exercises.length) * 100) : 0;
 
   const updateExerciseLog = (key: string, field: string, val: string) => {
     setExerciseLogs(prev => ({
@@ -420,73 +419,30 @@ export default function App() {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // Video Player Component
+  // Timer Effect
+  useEffect(() => {
+    let interval: number | null = null;
+    if (isActive) {
+      interval = window.setInterval(() => setSeconds((s) => s + 1), 1000);
+    } else if (interval) {
+      clearInterval(interval);
+    }
+    return () => { if (interval) clearInterval(interval); };
+  }, [isActive]);
+
   const VideoPlayer = ({ url, title }: { url: string; title: string }) => {
-    if (!url)
-      return (
-        <div className="w-full h-full bg-slate-900 flex items-center justify-center text-slate-700 italic text-sm">
-          No video available
-        </div>
-      );
-
-    // Direct MP4
-    if (url.endsWith(".mp4")) {
-      return (
-        <video
-          className="w-full h-full object-cover"
-          controls
-          playsInline
-          muted
-          loop
-        >
-          <source src={url} type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
-      );
-    }
-
-    // Instagram
-    if (url.includes("instagram.com")) {
-      const embedUrl = url.endsWith("/") ? `${url}embed/` : `${url}/embed/`;
-      return (
-        <iframe
-          className="w-full h-full"
-          src={embedUrl}
-          frameBorder="0"
-          scrolling="no"
-          title={title}
-        />
-      );
-    }
-
-    // YouTube
+    if (!url) return <div className="w-full h-full bg-slate-900 flex items-center justify-center text-slate-700 italic text-sm">No video</div>;
+    if (url.endsWith(".mp4")) return <video className="w-full h-full object-cover" controls playsInline muted loop><source src={url} type="video/mp4" /></video>;
+    
     let videoId = "";
-    if (url.includes("youtu.be/")) {
-      videoId = url.split("youtu.be/")[1].split("?")[0];
-    } else if (url.includes("v=")) {
-      videoId = url.split("v=")[1].split("&")[0];
-    }
+    if (url.includes("youtu.be/")) videoId = url.split("youtu.be/")[1].split("?")[0];
+    else if (url.includes("v=")) videoId = url.split("v=")[1].split("&")[0];
 
-    if (videoId) {
-      return (
-        <iframe
-          className="w-full h-full"
-          src={`https://www.youtube.com/embed/${videoId}?modestbranding=1&rel=0`}
-          title={title}
-          allowFullScreen
-        />
-      );
-    }
+    if (videoId) return <iframe className="w-full h-full" src={`https://www.youtube.com/embed/${videoId}?modestbranding=1&rel=0`} title={title} allowFullScreen />;
 
     return (
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="w-full h-full flex flex-col items-center justify-center gap-2 bg-slate-900 text-blue-400 hover:bg-slate-800 transition-colors"
-      >
-        <ExternalLink size={24} />
-        <span className="text-xs font-bold uppercase">Watch Tutorial</span>
+      <a href={url} target="_blank" rel="noopener noreferrer" className="w-full h-full flex flex-col items-center justify-center gap-2 bg-slate-900 text-primary hover:bg-slate-800 transition-colors">
+        <ExternalLink size={24} /> <span className="text-xs font-bold uppercase">Watch Tutorial</span>
       </a>
     );
   };
@@ -494,685 +450,395 @@ export default function App() {
   const monthStart = startOfMonth(selectedDate);
   const monthEnd = endOfMonth(selectedDate);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
-  const startDayIndex = getDay(monthStart); // 0 = Sunday, 1 = Monday...
+  const startDayIndex = getDay(monthStart);
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 text-gray-900 font-sans">
+    <div className="min-h-screen pb-32 font-sans selection:bg-primary/30">
       {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-10 p-4">
-        <div className="flex justify-between items-center max-w-lg mx-auto">
-          <h1 className="text-xl font-bold text-indigo-600">Shift-Proof</h1>
-          <div className="flex gap-2">
-            <button
-              onClick={requestNotificationPermission}
-              className={cn(
-                "p-2 rounded-full transition-colors",
-                notificationsEnabled ? "text-emerald-500 bg-emerald-50" : "text-gray-400 hover:bg-gray-100"
-              )}
-              title={notificationsEnabled ? "Notifications Active" : "Enable Notifications"}
-            >
-              <Bell size={20} />
-            </button>
-          </div>
+      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-white/5 px-6 py-4">
+        <div className="max-w-lg mx-auto flex justify-between items-center">
+          <h1 className="text-lg font-black tracking-tight text-white flex items-center gap-2">
+            <div className="w-2 h-2 bg-primary rounded-full animate-pulse shadow-[0_0_8px_rgba(99,102,241,0.8)]"></div>
+            SHIFT<span className="text-primary">PROOF</span>
+          </h1>
+          <button
+            onClick={requestNotificationPermission}
+            className={cn(
+              "p-2 rounded-full transition-all active:scale-95",
+              notificationsEnabled ? "bg-emerald-500/10 text-emerald-500" : "bg-surface text-slate-400"
+            )}
+          >
+            <Bell size={20} className={notificationsEnabled ? "fill-current" : ""} />
+          </button>
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto p-4">
+      <main className="max-w-lg mx-auto p-4 space-y-6">
         {activeTab === 'today' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-            <section>
-              <div className="flex items-center justify-between mb-4 bg-white p-2 rounded-xl border shadow-sm">
-                <button
-                  onClick={() => setSelectedDate(prev => subDays(prev, 1))}
-                  className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition-colors"
-                >
-                  <ChevronLeft size={20} />
-                </button>
+          <div className="animate-in space-y-6">
+            {/* Date Strip */}
+            <div className="flex items-center justify-between bg-surface p-2 rounded-2xl border border-white/5">
+              <button onClick={() => setSelectedDate(prev => subDays(prev, 1))} className="p-3 hover:bg-white/5 rounded-xl text-slate-400 transition-colors"><ChevronLeft size={20} /></button>
+              <div className="flex flex-col items-center">
+                <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+                  {isSameDay(selectedDate, new Date()) ? "Today" : format(selectedDate, 'EEE, MMM d')}
+                </h2>
+                {!isSameDay(selectedDate, new Date()) && (
+                  <button onClick={() => setSelectedDate(new Date())} className="text-[10px] font-bold text-primary mt-1 flex items-center gap-1 hover:underline">
+                    <RotateCcw size={10} /> RETURN
+                  </button>
+                )}
+              </div>
+              <button onClick={() => setSelectedDate(prev => addDays(prev, 1))} className="p-3 hover:bg-white/5 rounded-xl text-slate-400 transition-colors"><ChevronRight size={20} /></button>
+            </div>
 
-                <div className="flex flex-col items-center">
-                  <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                    {isSameDay(selectedDate, new Date())
-                      ? "Today"
-                      : isTomorrow(selectedDate)
-                      ? "Tomorrow"
-                      : isYesterday(selectedDate)
-                      ? "Yesterday"
-                      : format(selectedDate, 'EEE, MMM d')}
-                  </h2>
-                  {!isSameDay(selectedDate, new Date()) && (
+            {!currentShift ? (
+              <GlassCard className="text-center py-10 border-dashed border-slate-700">
+                <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-500">
+                  <CalendarIcon size={32} />
+                </div>
+                <h3 className="font-bold text-white text-lg">No Shift Scheduled</h3>
+                <p className="text-slate-400 text-sm mt-2 mb-6">Select your shift type to generate your protocol.</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {(['Regular', 'Early Morning', 'Afternoon', 'Night', 'Weekoff'] as ShiftType[]).map(type => (
                     <button
-                      onClick={() => setSelectedDate(new Date())}
-                      className="text-xs font-medium text-indigo-600 flex items-center gap-1 hover:bg-indigo-50 px-2 py-0.5 rounded-full transition-colors"
+                      key={type}
+                      onClick={() => handleSetShift(type)}
+                      className={cn(
+                        "p-4 rounded-xl border text-left transition-all hover:scale-[1.02] active:scale-95",
+                        type === 'Weekoff' 
+                          ? "col-span-2 bg-emerald-500/10 border-emerald-500/20 text-emerald-400" 
+                          : "bg-surface-hover border-white/5 text-slate-300 hover:bg-slate-700"
+                      )}
                     >
-                      <RotateCcw size={12} /> Return to Today
+                      <div className="text-sm font-bold">{type}</div>
+                      <div className="text-[10px] opacity-60 mt-1">
+                         {type === 'Weekoff' ? 'Recovery Mode' : SHIFT_PROTOCOLS[type]?.shiftTime}
+                      </div>
                     </button>
-                  )}
-                  {isSameDay(selectedDate, new Date()) && (
-                    <span className="text-xs font-normal text-gray-500">
-                      {format(selectedDate, 'MMM d')}
-                    </span>
-                  )}
+                  ))}
+                </div>
+              </GlassCard>
+            ) : (
+              <>
+                {/* Hero Shift Card */}
+                <div className="relative group">
+                   <div className="absolute inset-0 bg-gradient-to-r from-primary to-purple-600 rounded-[var(--radius-card)] blur-xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                   <GlassCard className="relative bg-gradient-to-br from-surface to-slate-900 border-primary/20">
+                    <div className="flex justify-between items-start mb-6">
+                      <div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-primary mb-1 block">Active Protocol</span>
+                        <h3 className="text-3xl font-black text-white">{currentShift}</h3>
+                      </div>
+                      <div className="p-3 bg-primary/10 rounded-xl text-primary">
+                        {currentShift === 'Night' ? <Moon size={24} /> : currentShift === 'Weekoff' ? <CheckCircle size={24} /> : <Sun size={24} />}
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
+                        <Briefcase size={16} className="mt-0.5 text-slate-400" />
+                        <div>
+                           <div className="text-xs font-bold text-slate-300">Shift Time</div>
+                           <div className="text-sm font-medium text-slate-400">{protocol?.shiftTime}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
+                        <Moon size={16} className="mt-0.5 text-slate-400" />
+                        <div>
+                           <div className="text-xs font-bold text-slate-300">Sleep Window</div>
+                           <div className="text-sm font-medium text-slate-400">{protocol?.sleep.main}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </GlassCard>
                 </div>
 
-                <button
-                  onClick={() => setSelectedDate(prev => addDays(prev, 1))}
-                  className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition-colors"
-                >
-                  <ChevronRight size={20} />
-                </button>
-              </div>
-
-              {!currentShift ? (
-                <div className="bg-white rounded-xl border shadow-sm p-6 animate-in fade-in">
-                  <div className="text-center mb-6">
-                    <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <CalendarIcon size={24} />
-                    </div>
-                    <h3 className="font-bold text-gray-900">No shift set for {isSameDay(selectedDate, new Date()) ? 'today' : 'this day'}</h3>
-                    <p className="text-sm text-gray-500">Select a shift type to generate your schedule.</p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    {(['Regular', 'Early Morning', 'Afternoon', 'Night', 'Weekoff'] as ShiftType[]).map(type => (
-                      <button
-                        key={type}
-                        onClick={() => handleSetShift(type)}
-                        className={cn(
-                          "p-3 rounded-xl border text-left transition-all hover:border-indigo-300 hover:bg-indigo-50",
-                          type === 'Weekoff' && "col-span-2 hover:border-emerald-300 hover:bg-emerald-50"
-                        )}
-                      >
-                        <div className="text-sm font-bold flex justify-between">
-                          {type}
-                          {type === 'Weekoff' && <span className="text-emerald-600 text-xs">Rest Day</span>}
-                        </div>
-                        <div className="text-[10px] text-gray-500 line-clamp-1">
-                          {type === 'Weekoff' ? 'Dynamic Recovery Plan' : SHIFT_PROTOCOLS[type]?.shiftTime}
-                        </div>
-                      </button>
+                {/* Timeline / Meals */}
+                <GlassCard>
+                  <SectionHeader title="Daily Schedule" subtitle="Meals & Actions" />
+                  <div className="relative pl-4 space-y-6 border-l border-white/10 ml-2">
+                    {protocol?.meals.map((meal, idx) => (
+                      <div key={idx} className="relative pl-6">
+                        <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-slate-800 border border-slate-600"></div>
+                        <div className="text-xs font-bold text-primary mb-0.5">{meal.time}</div>
+                        <div className="text-sm font-bold text-white">{meal.label}</div>
+                        <div className="text-xs text-slate-400 mt-1">{meal.description}</div>
+                      </div>
                     ))}
                   </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="bg-white p-4 rounded-xl border shadow-sm">
-                    <span className="text-xs font-bold uppercase tracking-wider text-indigo-500">Active Shift</span>
-                    <h3 className="text-2xl font-bold">{currentShift}</h3>
-                    <p className="text-sm text-gray-500 mt-1">Priority: {protocol?.priority}</p>
-                    <p className="text-xs text-indigo-600 font-medium mt-1">{protocol?.shiftTime}</p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                      <h4 className="font-bold text-blue-900">Sleep</h4>
-                      <p className="text-sm text-blue-800">{protocol?.sleep.main}</p>
-                      {protocol?.sleep.anchor && (
-                        <p className="text-xs text-blue-700 mt-1">Nap: {protocol.sleep.anchor}</p>
-                      )}
-                    </div>
-                    <div className="bg-orange-50 p-4 rounded-xl border border-orange-100">
-                      <h4 className="font-bold text-orange-900">Workout</h4>
-                      <p className="text-sm text-orange-800">{protocol?.workout}</p>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-xl border overflow-hidden">
-                    <div className="p-4 border-b bg-gray-50">
-                      <h4 className="font-bold">Meal Schedule</h4>
-                    </div>
-                    <div className="divide-y">
-                      {protocol?.meals.map((meal, idx) => (
-                        <div key={idx} className="p-4 flex gap-4">
-                          <div className="text-sm font-bold text-indigo-600 min-w-[70px]">{meal.time}</div>
-                          <div>
-                            <div className="font-semibold text-sm">{meal.label}</div>
-                            <div className="text-xs text-gray-500">{meal.description}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Fitness Section - Integrated into today's view */}
-                  <div className="bg-white rounded-xl border overflow-hidden">
-                    <div className="p-4 border-b bg-gray-50">
-                      <h4 className="font-bold">Today's Fitness</h4>
-                    </div>
-                    <div className="p-4">
-                      <div className="flex justify-between items-center mb-3">
-                        <h5 className="font-semibold text-sm">Recommended Workout</h5>
-                        <span className="text-xs text-indigo-600">{protocol?.workout}</span>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-4">
-                        {currentShift === 'Weekoff'
-                          ? 'Rest day - consider light activity or stretching'
-                          : 'Follow your shift-based workout schedule'}
-                      </p>
-
-                      {/* Show today's workout based on the day of the week */}
-                      <div className="space-y-3">
-                        {getTodaysWorkout()?.exercises.slice(0, 3).map((ex, idx) => {
-                          const key = `${getTodayId()}-${ex.name}`;
-                          const isDone = completedExercises[key];
-
-                          return (
-                            <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                              <div>
-                                <div className="font-medium text-sm">{ex.name}</div>
-                                <div className="text-xs text-gray-500">{ex.goal}</div>
-                              </div>
-                              <button
-                                onClick={() => toggleExerciseComplete(key, ex.name)}
-                                className={`w-6 h-6 rounded-full border ${isDone ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}
-                              >
-                                {isDone && (
-                                  <span className="text-white text-xs">✓</span>
-                                )}
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </section>
+                </GlassCard>
+              </>
+            )}
           </div>
         )}
 
         {activeTab === 'calendar' && (
-          <div className="space-y-6 animate-in fade-in">
-            <div className="bg-white rounded-2xl border shadow-sm p-4">
-              <div className="flex items-center justify-between mb-4">
-                <button
-                  onClick={() => setSelectedDate(subDays(startOfMonth(selectedDate), 1))}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <CalendarIcon size={20} className="rotate-180" />
-                </button>
-                <h2 className="text-lg font-bold">{format(selectedDate, 'MMMM yyyy')}</h2>
-                <button
-                  onClick={() => setSelectedDate(addDays(endOfMonth(selectedDate), 1))}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <CalendarIcon size={20} />
-                </button>
+          <div className="space-y-6 animate-in">
+             <GlassCard>
+              <div className="flex items-center justify-between mb-6">
+                <button onClick={() => setSelectedDate(subDays(startOfMonth(selectedDate), 1))} className="p-2 hover:bg-white/5 rounded-full text-slate-400"><ChevronLeft size={20} /></button>
+                <h2 className="text-lg font-bold text-white">{format(selectedDate, 'MMMM yyyy')}</h2>
+                <button onClick={() => setSelectedDate(addDays(endOfMonth(selectedDate), 1))} className="p-2 hover:bg-white/5 rounded-full text-slate-400"><ChevronRight size={20} /></button>
               </div>
 
-              <div className="grid grid-cols-7 gap-1 text-center mb-2">
+              <div className="grid grid-cols-7 gap-1 text-center mb-4">
                 {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => (
-                  <div key={d} className="text-xs font-bold text-gray-400 py-2">{d}</div>
+                  <div key={d} className="text-[10px] font-bold text-slate-500 uppercase">{d}</div>
                 ))}
               </div>
 
-              <div className="grid grid-cols-7 gap-1">
-                {Array.from({ length: startDayIndex }).map((_, i) => (
-                  <div key={`empty-${i}`} className="aspect-square" />
-                ))}
+              <div className="grid grid-cols-7 gap-2">
+                {Array.from({ length: startDayIndex }).map((_, i) => <div key={`empty-${i}`} />)}
                 {daysInMonth.map(day => {
                   const dayShift = shifts.find(s => isSameDay(new Date(s.date), day));
                   const isSelected = isSameDay(day, selectedDate);
                   const isToday = isSameDay(day, new Date());
-
-                  // Color coding for calendar
-                  let shiftColor = "bg-indigo-400";
-                  if (dayShift?.type === 'Weekoff') shiftColor = "bg-emerald-400";
-                  if (dayShift?.type === 'Night') shiftColor = "bg-purple-400";
+                  
+                  let dotColor = "bg-slate-700";
+                  if (dayShift?.type === 'Night') dotColor = "bg-purple-500";
+                  else if (dayShift?.type === 'Weekoff') dotColor = "bg-emerald-500";
+                  else if (dayShift) dotColor = "bg-primary";
 
                   return (
                     <button
                       key={day.toISOString()}
                       onClick={() => setSelectedDate(day)}
                       className={cn(
-                        "aspect-square rounded-lg text-sm flex flex-col items-center justify-center relative transition-colors",
-                        isSelected ? "bg-indigo-600 text-white" : "hover:bg-gray-100",
-                        isToday && !isSelected && "border border-indigo-200 text-indigo-600"
+                        "aspect-square rounded-xl text-sm font-medium flex flex-col items-center justify-center gap-1 transition-all",
+                        isSelected ? "bg-primary text-white shadow-lg shadow-primary/20" : "bg-surface-hover text-slate-400 hover:bg-slate-700",
+                        isToday && !isSelected && "ring-1 ring-primary text-primary"
                       )}
                     >
                       <span>{format(day, 'd')}</span>
-                      <div className="flex gap-0.5 mt-1">
-                        {dayShift && (
-                          <div className={cn(
-                            "w-1.5 h-1.5 rounded-full",
-                            isSelected ? "bg-white" : shiftColor
-                          )} />
-                        )}
-                      </div>
+                      <div className={cn("w-1 h-1 rounded-full", isSelected ? "bg-white" : dotColor)} />
                     </button>
                   );
                 })}
               </div>
-            </div>
-
-            <div className="bg-white rounded-2xl border shadow-sm p-4">
-              <h3 className="font-bold mb-4">Set Shift for {format(selectedDate, 'MMM d')}</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {(['Regular', 'Early Morning', 'Afternoon', 'Night', 'Weekoff'] as ShiftType[]).map(type => (
-                  <button
-                    key={type}
-                    onClick={() => handleSetShift(type)}
-                    className={cn(
-                      "p-3 rounded-xl border text-left transition-all",
-                      currentShift === type
-                        ? "border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600"
-                        : "border-gray-200 hover:border-indigo-300",
-                      type === 'Weekoff' && "col-span-2 bg-emerald-50 border-emerald-200 hover:border-emerald-300"
-                    )}
-                  >
-                    <div className="text-sm font-bold flex justify-between">
-                      {type}
-                      {type === 'Weekoff' && <span className="text-emerald-600 text-xs">Rest Day</span>}
-                    </div>
-                    <div className="text-[10px] text-gray-500 line-clamp-1">
-                      {type === 'Weekoff' ? 'Dynamic Recovery Plan' : SHIFT_PROTOCOLS[type]?.shiftTime}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
+            </GlassCard>
           </div>
         )}
 
-        {/* Workouts Tab - Full Featured */}
         {activeTab === 'workouts' && (
-          <div className="space-y-6 animate-in fade-in">
-            {/* Horizontal Calendar for Days */}
-            <div className="flex overflow-x-auto gap-3 pb-2 no-scrollbar -mx-4 px-4">
+          <div className="space-y-6 animate-in">
+             {/* Horizontal Calendar */}
+             <div className="flex overflow-x-auto gap-3 pb-2 hide-scrollbar -mx-4 px-4">
               {workoutSchedule.map((day) => {
                 const isToday = day.id === getTodayId();
+                const isActive = activeWorkoutDay === day.id;
                 return (
                   <button
                     key={day.id}
                     onClick={() => setActiveWorkoutDay(day.id)}
-                    className={`flex-shrink-0 w-12 h-16 rounded-2xl flex flex-col items-center justify-center transition-all border relative ${
-                      activeWorkoutDay === day.id
-                        ? "bg-blue-600 border-blue-400 text-white shadow-xl shadow-blue-900/40 scale-105"
-                        : "bg-slate-900 border-slate-800 text-slate-500"
-                    }`}
-                  >
-                    {/* Today Indicator Dot */}
-                    {isToday && (
-                      <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-blue-400 rounded-full shadow-[0_0_8px_rgba(96,165,250,0.8)]"></span>
+                    className={cn(
+                      "flex-shrink-0 w-14 h-20 rounded-2xl flex flex-col items-center justify-center transition-all border relative",
+                      isActive 
+                        ? "bg-primary border-primary text-white shadow-xl shadow-primary/30 scale-105 z-10" 
+                        : "bg-surface border-white/5 text-slate-500 hover:bg-surface-hover"
                     )}
-
-                    <span className="text-[10px] font-bold uppercase mb-1">
-                      {day.day.substring(0, 1)}
-                    </span>
-                    <span className="text-sm font-black">
-                      {day.id === "wed"
-                        ? "⚡"
-                        : day.id === "sun"
-                        ? "Rest"
-                        : day.day.substring(0, 1)}
-                    </span>
+                  >
+                    {isToday && <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-sky-400 rounded-full shadow-[0_0_8px_rgba(56,189,248,0.8)]"></span>}
+                    <span className="text-[10px] font-bold uppercase mb-1 opacity-60">{day.day.substring(0, 3)}</span>
+                    <span className="text-lg font-black">{day.id === "wed" ? "⚡" : day.id === "sun" ? "R" : day.day.substring(0, 1)}</span>
                   </button>
                 )
               })}
             </div>
 
-            {/* Workout Summary Card */}
-            <div className="bg-gradient-to-br from-slate-900 to-slate-950 rounded-[2.5rem] p-6 border border-white/5 shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
-                <Trophy size={100} />
-              </div>
-              <div className="relative z-10">
-                <h2 className="text-3xl font-black text-white leading-tight">
-                  {currentWorkout?.title}
-                </h2>
-                <p className="text-blue-400 font-bold text-xs uppercase tracking-widest mt-1 mb-6">
-                  {currentWorkout?.focus}
-                </p>
-
-                <div className="flex justify-between items-end mb-2">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase">
-                    Daily Quest
-                  </span>
-                  <span className="text-xs font-black text-white">
-                    {progress}% Complete
-                  </span>
-                </div>
-                <div className="h-2 bg-slate-800 rounded-full overflow-hidden mb-8">
-                  <div
-                    className="h-full bg-gradient-to-r from-blue-600 to-cyan-400 transition-all duration-1000"
-                    style={{ width: `${progress}%` }}
-                  ></div>
-                </div>
-
-                {/* Timer Component */}
-                <div className="bg-slate-800/50 p-4 rounded-3xl flex items-center justify-between border border-slate-700/50">
-                  <div className="flex items-center gap-4">
-                    <button
-                      onClick={() => {
-                        setSeconds(0);
-                        setIsActive(false);
-                      }}
-                      className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-slate-300 active:scale-90 transition-transform"
-                    >
-                      <RotateCcw size={18} />
-                    </button>
-                    <div>
-                      <div className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">
-                        Rest Phase
-                      </div>
-                      <div className="text-2xl font-mono font-black text-white">
-                        {formatTime(seconds)}
-                      </div>
-                    </div>
+            {/* Workout Header Card */}
+            <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-surface to-slate-950 border border-white/5 p-8 shadow-2xl">
+               <div className="absolute -right-8 -top-8 text-white/5"><Trophy size={140} /></div>
+               <div className="relative z-10">
+                  <h2 className="text-3xl font-black text-white leading-tight mb-2">{currentWorkout?.title}</h2>
+                  <p className="text-primary font-bold text-xs uppercase tracking-widest mb-6">{currentWorkout?.focus}</p>
+                  
+                  {/* Progress Bar */}
+                  <div className="mb-8">
+                     <div className="flex justify-between text-xs font-bold mb-2 text-slate-400">
+                        <span>PROGRESS</span>
+                        <span className="text-white">{progress}%</span>
+                     </div>
+                     <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-primary to-purple-500 transition-all duration-1000" style={{ width: `${progress}%` }}></div>
+                     </div>
                   </div>
-                  <button
-                    onClick={() => setIsActive(!isActive)}
-                    className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all active:scale-95 ${
-                      isActive
-                        ? "bg-orange-500 shadow-orange-900/20"
-                        : "bg-blue-600 shadow-blue-900/20"
-                    }`}
-                  >
-                    {isActive ? (
-                      <Pause size={28} className="text-white" />
-                    ) : (
-                      <Play size={28} className="text-white ml-1" />
-                    )}
-                  </button>
-                </div>
-              </div>
+
+                  {/* Built-in Timer */}
+                   <div className="bg-slate-900/50 p-4 rounded-3xl flex items-center justify-between border border-white/5 backdrop-blur-sm">
+                      <div className="flex items-center gap-4">
+                         <button onClick={() => { setSeconds(0); setIsActive(false); }} className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-colors"><RotateCcw size={16} /></button>
+                         <div className="font-mono text-2xl font-black text-white tabular-nums">{formatTime(seconds)}</div>
+                      </div>
+                      <button onClick={() => setIsActive(!isActive)} className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all active:scale-95", isActive ? "bg-warning text-white" : "bg-primary text-white")}>
+                         {isActive ? <Pause size={20} /> : <Play size={20} className="ml-0.5" />}
+                      </button>
+                   </div>
+               </div>
             </div>
 
-            {/* Exercise List */}
+            {/* Exercises */}
             <div className="space-y-4">
               {currentWorkout?.exercises.map((ex, idx) => {
                 const key = `${activeWorkoutDay}-${ex.name}`;
                 const isDone = completedExercises[key];
-
+                
                 return (
-                  <div
-                    key={idx}
-                    className={`bg-slate-900 rounded-[2rem] border transition-all duration-300 overflow-hidden ${
-                      isDone
-                        ? "border-green-500/30 opacity-75 grayscale-[0.5]"
-                        : "border-slate-800"
-                    }`}
-                  >
-                    {/* Responsive Video Container */}
-                    <div className="aspect-video w-full bg-black relative group">
-                      <VideoPlayer url={ex.videoUrl} title={ex.name} />
-                    </div>
-
-                    <div className="p-5">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex-1 pr-4">
-                          <h3
-                            className={`text-xl font-black leading-tight mb-1 ${
-                              isDone ? "text-green-400 line-through" : "text-white"
-                            }`}
-                          >
-                            {ex.name}
-                          </h3>
-                          <div className="flex items-center gap-2">
-                            <span className="bg-blue-600/10 text-blue-400 text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-tighter">
-                              Goal: {ex.goal}
-                            </span>
-                            <button
-                              onClick={() =>
-                                setShowTip(showTip === ex.name ? null : ex.name)
-                              }
-                              className="text-slate-600 hover:text-blue-400 transition-colors"
-                            >
-                              <Info size={14} />
-                            </button>
-                          </div>
+                  <GlassCard key={idx} className={cn("p-0 overflow-hidden", isDone && "opacity-60 grayscale")}>
+                     {/* Video Area */}
+                     <div className="aspect-video bg-black relative">
+                        <VideoPlayer url={ex.videoUrl} title={ex.name} />
+                     </div>
+                     
+                     {/* Content */}
+                     <div className="p-5">
+                        <div className="flex justify-between items-start mb-4">
+                           <div className="flex-1 pr-4">
+                              <h3 className={cn("text-lg font-bold leading-tight mb-1", isDone ? "text-emerald-500 line-through" : "text-white")}>{ex.name}</h3>
+                              <div className="flex items-center gap-2">
+                                 <span className="bg-primary/10 text-primary text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-tighter">{ex.goal}</span>
+                                 <button onClick={() => setShowTip(showTip === ex.name ? null : ex.name)} className="text-slate-500 hover:text-white transition-colors"><Info size={14} /></button>
+                              </div>
+                           </div>
+                           <button onClick={() => toggleExerciseComplete(key)} className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90", isDone ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" : "bg-slate-800 text-slate-600")}>
+                              {isDone ? <CheckCircle size={20} /> : <Circle size={20} />}
+                           </button>
                         </div>
-                        <button
-                          onClick={() => toggleExerciseComplete(key, ex.name)}
-                          className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all active:scale-90 ${
-                            isDone
-                              ? "bg-green-500 text-white"
-                              : "bg-slate-800 text-slate-600"
-                          }`}
-                        >
-                          {isDone ? <CheckCircle size={28} /> : <Circle size={28} />}
-                        </button>
-                      </div>
+                        
+                        {showTip === ex.name && (
+                           <div className="bg-slate-900/50 p-3 rounded-xl text-xs text-slate-400 italic mb-4 border border-white/5 animate-in">"{ex.tip}"</div>
+                        )}
 
-                      {showTip === ex.name && (
-                        <div className="mb-4 bg-slate-950 p-4 rounded-2xl border border-slate-800/50 text-xs text-slate-400 italic leading-relaxed animate-in fade-in slide-in-from-top-2">
-                          "{ex.tip}"
-                        </div>
-                      )}
-
-                      {!currentWorkout.isRecovery && (
-                        <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-800/50">
-                          <div className="relative">
-                            <input
-                              type="text"
-                              placeholder="Weight"
-                              value={exerciseLogs[key]?.weight || ""}
-                              onChange={(e) =>
-                                updateExerciseLog(key, "weight", e.target.value)
-                              }
-                              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-blue-500/50 transition-all placeholder:text-slate-700"
-                            />
-                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-700 pointer-events-none">
-                              KG
-                            </span>
-                          </div>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              placeholder="Reps"
-                              value={exerciseLogs[key]?.reps || ""}
-                              onChange={(e) =>
-                                updateExerciseLog(key, "reps", e.target.value)
-                              }
-                              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-blue-500/50 transition-all placeholder:text-slate-700"
-                            />
-                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-700 pointer-events-none">
-                              REPS
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                        {!currentWorkout.isRecovery && (
+                           <div className="grid grid-cols-2 gap-3">
+                              <div className="relative">
+                                 <input type="text" placeholder="0" value={exerciseLogs[key]?.weight || ""} onChange={(e) => updateExerciseLog(key, "weight", e.target.value)} 
+                                    className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-3 text-sm font-bold text-white focus:outline-none focus:border-primary transition-all text-center" />
+                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-600 pointer-events-none">KG</span>
+                              </div>
+                              <div className="relative">
+                                 <input type="text" placeholder="0" value={exerciseLogs[key]?.reps || ""} onChange={(e) => updateExerciseLog(key, "reps", e.target.value)} 
+                                    className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-3 text-sm font-bold text-white focus:outline-none focus:border-primary transition-all text-center" />
+                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-600 pointer-events-none">REPS</span>
+                              </div>
+                           </div>
+                        )}
+                     </div>
+                  </GlassCard>
                 );
               })}
             </div>
           </div>
         )}
 
-        {/* Nutrition Tab - Enhanced */}
         {activeTab === 'nutrition' && (
-          <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-slate-900 rounded-[2.5rem] p-8 border border-white/5 shadow-2xl">
-              <h2 className="text-2xl font-black mb-8 flex items-center gap-3">
-                <Utensils className="text-orange-500" /> Fuel Intake
-              </h2>
-
-              <div className="space-y-10">
-                {(["calories", "protein"] as const).map((type) => {
-                  const target = type === "calories" ? 2200 : 160;
-                  const current = dietTracking[type] || 0;
-                  const pct = Math.min(100, (current / target) * 100);
-                  const color = type === "calories" ? "orange" : "blue";
-
-                  return (
-                    <div key={type}>
-                      <div className="flex justify-between items-end mb-3">
-                        <span className="text-xs font-black text-slate-500 uppercase tracking-widest">
-                          {type}
-                        </span>
-                        <span className="text-2xl font-black text-white">
-                          {current}
-                          {type === "protein" ? "g" : ""}{" "}
-                          <span className="text-xs text-slate-600">/ {target}</span>
-                        </span>
-                      </div>
-                      <div className="h-3 bg-slate-800 rounded-full overflow-hidden mb-6">
-                        <div
-                          className={`h-full bg-${color}-500 transition-all duration-1000`}
-                          style={{ width: `${pct}%` }}
-                        ></div>
-                      </div>
-                      <div className="flex gap-2">
-                        {[10, 50, 100].map((inc) => (
-                          <button
-                            key={inc}
-                            onClick={() => {
-                              const val = type === "calories" ? inc : inc / 5;
-                              updateDietTracking(type, val);
-                            }}
-                            className="flex-1 bg-slate-800/50 border border-slate-800 py-3 rounded-2xl text-[10px] font-black uppercase hover:bg-slate-800 active:scale-95 transition-all"
-                          >
-                            +
-                            {type === "calories"
-                              ? inc
-                              : (inc / 5).toFixed(0) + "g"}
-                          </button>
-                        ))}
-                        <button
-                          onClick={() => {
-                            const val = type === "calories" ? 50 : 10;
-                            updateDietTracking(type, -val);
-                          }}
-                          className="px-4 bg-slate-800/50 border border-slate-800 rounded-2xl text-slate-600 hover:text-red-400 active:scale-95 transition-all"
-                        >
-                          <Minus size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+          <div className="space-y-6 animate-in">
+             <GlassCard className="p-8">
+                <SectionHeader icon={Utensils} title="Fuel Intake" subtitle="Daily Targets" />
+                <div className="space-y-8 mt-6">
+                  {(["calories", "protein"] as const).map((type) => {
+                     const target = type === "calories" ? 2200 : 160;
+                     const current = dietTracking[type] || 0;
+                     const pct = Math.min(100, (current / target) * 100);
+                     const color = type === "calories" ? "bg-warning" : "bg-primary";
+                     
+                     return (
+                        <div key={type}>
+                           <div className="flex justify-between items-end mb-2">
+                              <span className="text-xs font-black text-slate-500 uppercase tracking-widest">{type}</span>
+                              <span className="text-xl font-black text-white">{current}<span className="text-xs text-slate-500 font-medium ml-1">/ {target}</span></span>
+                           </div>
+                           <div className="h-2 bg-slate-800 rounded-full overflow-hidden mb-4">
+                              <div className={cn("h-full transition-all duration-1000", color)} style={{ width: `${pct}%` }}></div>
+                           </div>
+                           <div className="flex gap-2">
+                              {[10, 50, 100].map(inc => (
+                                 <button key={inc} onClick={() => updateDietTracking(type, type === "calories" ? inc : inc/5)} className="flex-1 py-2 bg-slate-800 rounded-lg text-[10px] font-bold text-slate-300 hover:bg-slate-700 active:scale-95 transition-all">
+                                    +{type === "calories" ? inc : (inc/5).toFixed(0)}
+                                 </button>
+                              ))}
+                              <button onClick={() => updateDietTracking(type, type === "calories" ? -50 : -10)} className="px-3 bg-slate-800 rounded-lg text-slate-400 hover:text-red-400 active:scale-95 transition-all"><Minus size={14} /></button>
+                           </div>
+                        </div>
+                     )
+                  })}
+                </div>
+             </GlassCard>
           </div>
         )}
 
-        {/* Stats Tab - Enhanced */}
         {activeTab === 'stats' && (
-          <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-slate-900 p-8 rounded-[2.5rem] border border-white/5 flex flex-col items-center text-center shadow-xl">
-                <Flame
-                  size={32}
-                  className="text-orange-500 mb-4 fill-orange-500/10"
-                />
-                <div className="text-3xl font-black">{stats.streak}</div>
-                <div className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mt-1">
-                  Day Streak
-                </div>
-              </div>
-              <div className="bg-slate-900 p-8 rounded-[2.5rem] border border-white/5 flex flex-col items-center text-center shadow-xl">
-                <Trophy
-                  size={32}
-                  className="text-yellow-400 mb-4 fill-yellow-400/10"
-                />
-                <div className="text-3xl font-black">{stats.level}</div>
-                <div className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mt-1">
-                  Global Rank
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-slate-900 rounded-[2.5rem] p-8 border border-white/5">
-              <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-6">
-                Recent Activity
-              </h3>
-              <div className="space-y-3">
-                {Object.keys(completedExercises)
-                  .slice(-5)
-                  .reverse()
-                  .map((key) => {
-                    if (!completedExercises[key]) return null; // Only show completed
-                    return (
-                      <div
-                        key={key}
-                        className="flex items-center justify-between p-4 bg-slate-950 rounded-2xl border border-slate-800/30 animate-in slide-in-from-left-2"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center text-green-500 border border-green-500/20">
-                            <CheckCircle size={20} />
-                          </div>
-                          <div>
-                            <div className="text-sm font-black text-white">
-                              {key.split("-")[1]}
-                            </div>
-                            <div className="text-[9px] font-bold text-slate-600 uppercase tracking-tighter">
-                              {key.split("-")[0]} SESSION
-                            </div>
-                          </div>
+          <div className="space-y-6 animate-in">
+             <div className="grid grid-cols-2 gap-4">
+                <GlassCard className="flex flex-col items-center justify-center p-8">
+                   <Flame size={32} className="text-orange-500 mb-3" />
+                   <div className="text-4xl font-black text-white">{stats.streak}</div>
+                   <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Day Streak</div>
+                </GlassCard>
+                <GlassCard className="flex flex-col items-center justify-center p-8">
+                   <Trophy size={32} className="text-yellow-400 mb-3" />
+                   <div className="text-4xl font-black text-white">{stats.level}</div>
+                   <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Level</div>
+                </GlassCard>
+             </div>
+             
+             <GlassCard>
+                <SectionHeader title="Recent Activity" />
+                <div className="space-y-3 mt-4">
+                  {Object.keys(completedExercises).slice(-5).reverse().map(key => {
+                     if (!completedExercises[key]) return null;
+                     return (
+                        <div key={key} className="flex items-center gap-4 p-3 rounded-xl bg-slate-900/50 border border-white/5">
+                           <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-500"><CheckCircle size={16} /></div>
+                           <div>
+                              <div className="text-sm font-bold text-white">{key.split("-")[1]}</div>
+                              <div className="text-[9px] font-bold text-slate-500 uppercase">{key.split("-")[0]} SESSION</div>
+                           </div>
                         </div>
-                        <span className="text-[10px] font-black text-blue-500">
-                          +50 XP
-                        </span>
-                      </div>
-                    );
+                     )
                   })}
-                {Object.keys(completedExercises).filter(
-                  (k) => completedExercises[k]
-                ).length === 0 && (
-                  <div className="py-12 text-center text-slate-600 italic text-sm font-medium">
-                    No activity logged. Push your limits today!
-                  </div>
-                )}
-              </div>
-            </div>
+                  {Object.keys(completedExercises).filter(k => completedExercises[k]).length === 0 && (
+                     <div className="text-center py-8 text-sm text-slate-500 italic">No activity recorded yet.</div>
+                  )}
+                </div>
+             </GlassCard>
           </div>
         )}
       </main>
 
-      {/* Unified Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t px-6 py-3 pb-6 safe-area-bottom">
-        <div className="max-w-lg mx-auto flex justify-between items-center">
-          <NavButton
-            active={activeTab === 'today'}
-            onClick={() => {
-              if (activeTab === 'today') setSelectedDate(new Date());
-              setActiveTab('today');
-            }}
-            icon={<Home size={24} />}
-            label="Schedule"
-          />
-          <NavButton
-            active={activeTab === 'calendar'}
-            onClick={() => setActiveTab('calendar')}
-            icon={<CalendarIcon size={24} />}
-            label="Calendar"
-          />
-          <NavButton
-            active={activeTab === 'workouts'}
-            onClick={() => setActiveTab('workouts')}
-            icon={<Dumbbell size={24} />}
-            label="Workouts"
-          />
-          <NavButton
-            active={activeTab === 'nutrition'}
-            onClick={() => setActiveTab('nutrition')}
-            icon={<Utensils size={24} />}
-            label="Nutrition"
-          />
-          <NavButton
-            active={activeTab === 'stats'}
-            onClick={() => setActiveTab('stats')}
-            icon={<BarChart3 size={24} />}
-            label="Stats"
-          />
-        </div>
+      {/* Floating Dock Navigation */}
+      <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-surface/80 backdrop-blur-2xl border border-white/10 p-2 rounded-2xl shadow-2xl z-50 flex items-center gap-1 shadow-black/50">
+         <NavButton active={activeTab === 'today'} onClick={() => setActiveTab('today')} icon={<Home size={20} />} />
+         <NavButton active={activeTab === 'calendar'} onClick={() => setActiveTab('calendar')} icon={<CalendarIcon size={20} />} />
+         
+         <div className="w-px h-8 bg-white/10 mx-1"></div>
+         
+         <NavButton active={activeTab === 'workouts'} onClick={() => setActiveTab('workouts')} icon={<Dumbbell size={24} />} isMain />
+         
+         <div className="w-px h-8 bg-white/10 mx-1"></div>
+
+         <NavButton active={activeTab === 'nutrition'} onClick={() => setActiveTab('nutrition')} icon={<Utensils size={20} />} />
+         <NavButton active={activeTab === 'stats'} onClick={() => setActiveTab('stats')} icon={<BarChart3 size={20} />} />
       </nav>
     </div>
   );
 }
 
-function NavButton({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
+function NavButton({ active, onClick, icon, isMain }: { active: boolean; onClick: () => void; icon: React.ReactNode, isMain?: boolean }) {
   return (
     <button
       onClick={onClick}
       className={cn(
-        "flex flex-col items-center gap-1 transition-colors",
-        active ? "text-indigo-600" : "text-gray-400"
+        "relative flex items-center justify-center transition-all duration-300 rounded-xl",
+        isMain ? "w-14 h-14" : "w-12 h-12",
+        active 
+          ? "bg-primary text-white shadow-lg shadow-primary/25 scale-110" 
+          : "text-slate-400 hover:text-white hover:bg-white/5",
+        !active && isMain && "bg-surface-hover border border-white/5 text-slate-300"
       )}
     >
       {icon}
-      <span className="text-[10px] font-bold">{label}</span>
+      {active && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-white rounded-full opacity-50"></span>}
     </button>
   );
 }
