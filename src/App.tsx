@@ -431,6 +431,8 @@ export default function App() {
   }, [isActive]);
 
   const VideoPlayer = ({ url, title }: { url: string; title: string }) => {
+    const [isPlaying, setIsPlaying] = useState(false);
+
     if (!url) return <div className="w-full h-full bg-slate-900 flex items-center justify-center text-slate-700 italic text-sm">No video</div>;
     if (url.endsWith(".mp4")) return <video className="w-full h-full object-cover" controls playsInline muted loop><source src={url} type="video/mp4" /></video>;
     
@@ -438,7 +440,29 @@ export default function App() {
     if (url.includes("youtu.be/")) videoId = url.split("youtu.be/")[1].split("?")[0];
     else if (url.includes("v=")) videoId = url.split("v=")[1].split("&")[0];
 
-    if (videoId) return <iframe className="w-full h-full" src={`https://www.youtube.com/embed/${videoId}?modestbranding=1&rel=0`} title={title} allowFullScreen />;
+    if (videoId) {
+       if (isPlaying) {
+          return <iframe className="w-full h-full" src={`https://www.youtube.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0`} title={title} allowFullScreen />;
+       }
+       return (
+          <div 
+             onClick={() => setIsPlaying(true)}
+             className="w-full h-full relative cursor-pointer group overflow-hidden bg-slate-900"
+          >
+             <img 
+                src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`} 
+                alt={title} 
+                className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                loading="lazy"
+             />
+             <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                   <Play size={20} className="text-white fill-white ml-0.5" />
+                </div>
+             </div>
+          </div>
+       );
+    }
 
     return (
       <a href={url} target="_blank" rel="noopener noreferrer" className="w-full h-full flex flex-col items-center justify-center gap-2 bg-slate-900 text-primary hover:bg-slate-800 transition-colors">
@@ -616,6 +640,34 @@ export default function App() {
                   );
                 })}
               </div>
+            </GlassCard>
+
+            <GlassCard>
+               <h3 className="font-bold text-white mb-4">Set Shift for {format(selectedDate, 'MMM d')}</h3>
+               <div className="grid grid-cols-2 gap-3">
+                  {(['Regular', 'Early Morning', 'Afternoon', 'Night', 'Weekoff'] as ShiftType[]).map(type => (
+                    <button
+                      key={type}
+                      onClick={() => handleSetShift(type)}
+                      className={cn(
+                        "p-4 rounded-xl border text-left transition-all hover:scale-[1.02] active:scale-95",
+                        currentShift === type 
+                           ? "bg-primary border-primary text-white ring-1 ring-primary"
+                           : (type === 'Weekoff' 
+                              ? "col-span-2 bg-emerald-500/10 border-emerald-500/20 text-emerald-400" 
+                              : "bg-surface-hover border-white/5 text-slate-300 hover:bg-slate-700")
+                      )}
+                    >
+                      <div className="text-sm font-bold flex justify-between">
+                         {type}
+                         {currentShift === type && <CheckCircle size={16} />}
+                      </div>
+                      <div className={cn("text-[10px] mt-1", currentShift === type ? "text-indigo-100" : "opacity-60")}>
+                         {type === 'Weekoff' ? 'Recovery Mode' : SHIFT_PROTOCOLS[type]?.shiftTime}
+                      </div>
+                    </button>
+                  ))}
+                </div>
             </GlassCard>
           </div>
         )}
