@@ -1,25 +1,20 @@
 import { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, ClipboardList, Utensils, Home, Bell, Circle, Play, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
-import { SHIFT_PROTOCOLS, WORKOUT_PLAN, NUTRITION_PLAN, type ShiftType, type ScheduleProtocol } from './constants';
+import { Calendar as CalendarIcon, Home, Bell, ChevronLeft, ChevronRight, RotateCcw, Dumbbell } from 'lucide-react';
+import { SHIFT_PROTOCOLS, type ShiftType, type ScheduleProtocol } from './constants';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, getDay, addDays, subDays, isTomorrow, isYesterday } from 'date-fns';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import WorkoutPlayer from './components/WorkoutPlayer';
+import FitnessApp from './FitnessApp';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-type Tab = 'today' | 'calendar' | 'workout' | 'nutrition';
+type Tab = 'today' | 'calendar';
 
 interface DayShift {
   date: string;
   type: ShiftType;
-}
-
-interface CompletedWorkout {
-  date: string;
-  timestamp: number;
 }
 
 const getDailyProtocol = (date: Date, shifts: DayShift[]): ScheduleProtocol | null => {
@@ -87,21 +82,13 @@ export default function App() {
     const saved = localStorage.getItem('shifts');
     return saved ? JSON.parse(saved) : [];
   });
-  const [workoutHistory, setWorkoutHistory] = useState<CompletedWorkout[]>(() => {
-    const saved = localStorage.getItem('workoutHistory');
-    return saved ? JSON.parse(saved) : [];
-  });
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [notificationsEnabled, setNotificationsEnabled] = useState(Notification.permission === 'granted');
-  const [isWorkoutActive, setIsWorkoutActive] = useState(false);
+  const [showFitnessApp, setShowFitnessApp] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('shifts', JSON.stringify(shifts));
   }, [shifts]);
-
-  useEffect(() => {
-    localStorage.setItem('workoutHistory', JSON.stringify(workoutHistory));
-  }, [workoutHistory]);
 
   const requestNotificationPermission = async () => {
     const permission = await Notification.requestPermission();
@@ -112,11 +99,6 @@ export default function App() {
         icon: "/pwa-192x192.png"
       });
     }
-  };
-
-  const handleWorkoutComplete = () => {
-    setWorkoutHistory(prev => [...prev, { date: new Date().toISOString(), timestamp: Date.now() }]);
-    setIsWorkoutActive(false);
   };
 
   const currentShift = shifts.find(s => isSameDay(new Date(s.date), selectedDate))?.type;
@@ -133,16 +115,12 @@ export default function App() {
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
   const startDayIndex = getDay(monthStart); // 0 = Sunday, 1 = Monday...
 
+  if (showFitnessApp) {
+    return <FitnessApp onExit={() => setShowFitnessApp(false)} />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20 text-gray-900 font-sans">
-      {/* Workout Player Overlay */}
-      {isWorkoutActive && (
-        <WorkoutPlayer 
-          onClose={() => setIsWorkoutActive(false)} 
-          onComplete={handleWorkoutComplete}
-        />
-      )}
-
       {/* Header */}
       <header className="bg-white border-b sticky top-0 z-10 p-4">
         <div className="flex justify-between items-center max-w-lg mx-auto">
@@ -316,7 +294,6 @@ export default function App() {
                   const dayShift = shifts.find(s => isSameDay(new Date(s.date), day));
                   const isSelected = isSameDay(day, selectedDate);
                   const isToday = isSameDay(day, new Date());
-                  const hasWorkout = workoutHistory.some(w => isSameDay(new Date(w.date), day));
                   
                   // Color coding for calendar
                   let shiftColor = "bg-indigo-400";
@@ -339,12 +316,6 @@ export default function App() {
                           <div className={cn(
                             "w-1.5 h-1.5 rounded-full",
                             isSelected ? "bg-white" : shiftColor
-                          )} />
-                        )}
-                        {hasWorkout && (
-                          <div className={cn(
-                            "w-1.5 h-1.5 rounded-full",
-                            isSelected ? "bg-white" : "bg-orange-400"
                           )} />
                         )}
                       </div>
@@ -382,110 +353,6 @@ export default function App() {
             </div>
           </div>
         )}
-
-        {activeTab === 'workout' && (
-          <div className="space-y-4 animate-in fade-in">
-             <div className="bg-indigo-600 rounded-2xl p-6 text-white shadow-lg">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h2 className="text-2xl font-bold">Push/Pull/Legs</h2>
-                    <p className="text-indigo-100 text-sm mt-1">3 Days Per Week • Full Body Hybrid</p>
-                  </div>
-                  <div className="text-center bg-indigo-500/30 p-2 rounded-lg backdrop-blur-sm">
-                    <div className="text-xs text-indigo-200 uppercase tracking-wider">Done</div>
-                    <div className="text-xl font-bold">{workoutHistory.length}</div>
-                  </div>
-                </div>
-                
-                <div className="mt-6 flex gap-4 text-xs font-medium">
-                  <span className="bg-indigo-500 px-2 py-1 rounded">Rest: 60-90s</span>
-                  <span className="bg-indigo-500 px-2 py-1 rounded">Tempo: 3s down / 1s up</span>
-                </div>
-
-                <button 
-                  onClick={() => setIsWorkoutActive(true)}
-                  className="mt-6 w-full bg-white text-indigo-600 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-50 transition-colors"
-                >
-                  <Play size={20} fill="currentColor" /> Start Workout
-                </button>
-             </div>
-
-             <div className="space-y-2">
-               {WORKOUT_PLAN.map((ex, idx) => (
-                 <div key={idx} className="bg-white p-4 rounded-xl border flex items-center justify-between group">
-                    <div className="flex gap-4 items-center">
-                      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
-                        {idx + 1}
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-gray-900">{ex.exercise}</h4>
-                        <p className="text-xs text-gray-500">{ex.target}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold text-indigo-600">{ex.sets} × {ex.reps}</div>
-                    </div>
-                 </div>
-               ))}
-             </div>
-             
-             <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl">
-               <p className="text-xs text-amber-800">
-                 <strong>Note:</strong> If you get Resistance Bands, add Face Pulls (3 sets of 20) at the end for posture.
-               </p>
-             </div>
-          </div>
-        )}
-
-        {activeTab === 'nutrition' && (
-          <div className="space-y-6 animate-in fade-in">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl">
-                <span className="text-[10px] font-bold text-emerald-600 uppercase">Daily Target</span>
-                <div className="text-lg font-bold text-emerald-900">~1800 kcal</div>
-              </div>
-              <div className="bg-blue-50 border border-blue-100 p-4 rounded-2xl">
-                <span className="text-[10px] font-bold text-blue-600 uppercase">Protein</span>
-                <div className="text-lg font-bold text-blue-900">~140g</div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="font-bold px-1">Meal Template (Ovo-Vegetarian)</h3>
-              {NUTRITION_PLAN.meals.map((meal, idx) => (
-                <div key={idx} className="bg-white rounded-xl border overflow-hidden shadow-sm">
-                  <div className="p-3 bg-gray-50 border-b flex justify-between items-center">
-                    <h4 className="font-bold text-sm">{meal.label}</h4>
-                    <span className="text-[10px] font-medium text-gray-500">{meal.target}</span>
-                  </div>
-                  <ul className="p-3 space-y-2">
-                    {meal.items.map((item, i) => (
-                      <li key={i} className="text-xs flex gap-2">
-                        <div className="mt-1"><Circle size={8} className="fill-indigo-400 text-indigo-400" /></div>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-
-            <div className="bg-indigo-900 text-white rounded-2xl p-5 shadow-lg">
-              <h3 className="font-bold mb-3 flex items-center gap-2">
-                <ClipboardList size={18} />
-                Supplements
-              </h3>
-              <div className="grid grid-cols-1 gap-3">
-                {NUTRITION_PLAN.supplements.map((s, idx) => (
-                  <div key={idx} className="flex justify-between items-center border-b border-indigo-800 pb-2 last:border-0 last:pb-0">
-                    <span className="text-sm font-medium">{s.name}</span>
-                    <span className="text-[10px] text-indigo-300">{s.purpose}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
       </main>
 
       {/* Navigation */}
@@ -506,18 +373,13 @@ export default function App() {
             icon={<CalendarIcon size={24} />}
             label="Calendar"
           />
-          <NavButton 
-            active={activeTab === 'workout'} 
-            onClick={() => setActiveTab('workout')}
-            icon={<ClipboardList size={24} />}
-            label="Workout"
-          />
-          <NavButton 
-            active={activeTab === 'nutrition'} 
-            onClick={() => setActiveTab('nutrition')}
-            icon={<Utensils size={24} />}
-            label="Eats"
-          />
+          <button 
+            onClick={() => setShowFitnessApp(true)}
+            className="flex flex-col items-center gap-1 transition-colors text-gray-400 hover:text-indigo-600"
+          >
+            <Dumbbell size={24} />
+            <span className="text-[10px] font-bold">Fitness</span>
+          </button>
         </div>
       </nav>
     </div>
